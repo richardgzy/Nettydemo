@@ -60,7 +60,7 @@ public class MyClient {
                                                  ctx.writeAndFlush(buff).addListeners(new ChannelFutureListener() {
 
                                                      public void operationComplete(ChannelFuture future) {
-							 future.channel().close();
+							 //future.channel().close();
                                                          //future.channel().parent().close();
                                                      }
                                                  });
