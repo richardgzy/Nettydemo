@@ -1,3 +1,4 @@
+import com.sun.corba.se.spi.activation.Server;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -8,12 +9,9 @@ import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 
 
-/**
- * @author louyl
- */
 public class App {
     public static void main(String[] args) throws Exception {
-        String sockPath = "/tmp/echo.sock";
+        String sockPath = "/tmp/echo.socket";
 
         final ServerBootstrap bootstrap = new ServerBootstrap();
         EventLoopGroup serverBossEventLoopGroup = new EpollEventLoopGroup();

@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/richard/Desktop/NettyDemo/src/domain-socket-c/FloatingBarDemo.c
+stdlib.h
+-
+stdio.h
+-
+stddef.h
+-
+sys/socket.h
+-
+sys/un.h
+-
+errno.h
+-
+string.h
+-
+unistd.h
+-
+ctype.h
+-
+

@@ -1,92 +1,85 @@
 import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
-
 import java.util.Scanner;
 
 public class ShineDemo {
-    public static void main(String[] args) {
-        //sock file path for communication between server and client
-        String sockPath = "/tmp/echo.socket";
+    public static void main(String[] args) throws Exception {
+        //sock file path for communication
+        String serverSockPath = "/tmp/echo2.socket";
 
-        //client initiation
-        Bootstrap bootstrapClient = new Bootstrap();
-        EventLoopGroup clientEventLoop = new EpollEventLoopGroup();
+        //server initiation
+        final ServerBootstrap bootstrap = new ServerBootstrap();
+        EventLoopGroup serverBossEventLoopGroup = new EpollEventLoopGroup();
+        EventLoopGroup serverWorkerEventLoopGroup = new EpollEventLoopGroup();
 
-        bootstrapClient.group(clientEventLoop)
-                .channel(EpollDomainSocketChannel.class)
-                .handler(new ChannelInitializer<Channel>() {
-                             @Override
-                             protected void initChannel(final Channel channel) throws Exception {
-                                 channel.pipeline().addLast(
-                                         new ChannelInboundHandlerAdapter() {
+        bootstrap.group(serverBossEventLoopGroup, serverWorkerEventLoopGroup)
+                .localAddress(new DomainSocketAddress(serverSockPath))
+                .channel(EpollServerDomainSocketChannel.class)
+                .childHandler(
+                        new ChannelInitializer<Channel>() {
+                            @Override
+                            protected void initChannel(final Channel channel) {
+                                channel.pipeline().addLast(
+                                        new SimpleChannelInboundHandler() {
+                                            @Override
+                                            public void channelRegistered(final ChannelHandlerContext ctx) {
+                                                System.out.println("Channel Registered and Waiting for message....");
+                                            }
 
-                                             @Override
-                                             public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-                                                 System.out.println("Client Side Channel Registered");
-                                             }
+                                            @Override
+                                            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-                                             @Override
-                                             public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-                                                 final ByteBuf buff = (ByteBuf) msg;
-                                                 try {
+                                                final ByteBuf buff = (ByteBuf) msg;
+                                                try {
+                                                    byte[] bytes = new byte[buff.readableBytes()];
+                                                    buff.getBytes(0, bytes);
+                                                    System.out.println("Message received: " + new String(bytes));
+                                                } finally {
+                                                    buff.release();
+                                                }
+                                                ctx.close();
+                                            }
 
-                                                     byte[] bytes = new byte[buff.readableBytes()];
-                                                     buff.getBytes(0, bytes);
-                                                     System.out.println(new String(bytes) + ", changed to UPPER CASE");
-                                                 } finally {
-                                                     buff.release();
-                                                 }
-                                                 ctx.close();
-                                             }
+                                            @Override
+                                            protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                                final ByteBuf buff = (ByteBuf) msg;
+                                                try {
+                                                    byte[] bytes = new byte[buff.readableBytes()];
+                                                    buff.getBytes(0, bytes);
+                                                    System.out.println("Message received: " + new String(bytes));
+                                                } finally {
+                                                    buff.release();
+                                                }
+                                                ctx.close();
+                                            }
 
-                                             @Override
-                                             public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                                            @Override
+                                            public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
+                                                System.out.println("Error occur when reading from Unix domain socket: " + cause.getMessage());
+                                                ctx.close();
+                                            }
 
-                                                 Scanner reader = new Scanner(System.in);  // Reading from System.in
-                                                 System.out.println("Enter some message: ");
-                                                 String userInput = reader.nextLine().trim();
-
-                                                 if (userInput.equals("")) {
-                                                     userInput = "this is a sample user input";
-                                                 }
-
-                                                 final ByteBuf buff = ctx.alloc().buffer();
-                                                 buff.writeBytes(userInput.getBytes("UTF-8"));
-
-                                                 ctx.writeAndFlush(buff).addListeners(new ChannelFutureListener() {
-
-                                                     public void operationComplete(ChannelFuture future) {
-                                                         future.channel().close();
-                                                         //future.channel().parent().close();
-                                                     }
-                                                 });
-                                             }
-
-                                             @Override
-                                             public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
-                                                 System.out.println("Error occur when reading from Unix domain socket: " + cause.getMessage());
-                                                 ctx.close();
-                                             }
-                                         }
-                                 );
-                             }
-                         }
+                                            @Override
+                                            public void channelActive(ChannelHandlerContext ctx) throws Exception {
+                                                super.channelActive(ctx);
+                                            }
+                                        }
+                                );
+                            }
+                        }
                 );
+        final ChannelFuture serverFuture = bootstrap.bind().sync();
 
-        try {
-            //read message from .sock file
-            final ChannelFuture clientFuture = bootstrapClient.connect(new DomainSocketAddress(sockPath)).sync();
-
-            //close socket synchronization
-            clientFuture.channel().closeFuture().sync();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            clientEventLoop.shutdownGracefully();
-        }
+        //close communication
+        serverFuture.channel().closeFuture().sync();
+        serverBossEventLoopGroup.shutdownGracefully();
+        serverWorkerEventLoopGroup.shutdownGracefully();
     }
+
 }

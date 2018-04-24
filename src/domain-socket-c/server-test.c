@@ -17,16 +17,16 @@ int main(void)
     struct sockaddr_un serun, cliun;  
     socklen_t cliun_len;  
     int listenfd, connfd, size;  
-    char buf[MAXLINE];  
-    int i, n;  
+    char buf[MAXLINE];
+    int i, n;
  
-    if ((listenfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {  
-        perror("socket error");  
+    if ((listenfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        perror("socket error");
         exit(1);  
-    }  
+    }
  
     memset(&serun, 0, sizeof(serun));  
-    serun.sun_family = AF_UNIX;  
+    serun.sun_family = AF_UNIX;
     strcpy(serun.sun_path, socket_path);  
     size = offsetof(struct sockaddr_un, sun_path) + strlen(serun.sun_path);  
     unlink(socket_path);  
@@ -51,13 +51,13 @@ int main(void)
         while(1) {  
             n = read(connfd, buf, sizeof(buf));
             if (n < 0) {  
-                perror("read errori");
+                perror("read error");
                 break;  
             } else if(n == 0) {  
                 perror("EOF\n");  
                 break;  
             }  
-              
+
             perror(buf);  
  
             for(i = 0; i < n; i++) {  
