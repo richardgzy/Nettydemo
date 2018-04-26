@@ -27,6 +27,11 @@ public class App {
                                 channel.pipeline().addLast(
                                         new ChannelInboundHandlerAdapter() {
                                             @Override
+                                            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                                                System.out.println("Channel Registered");
+                                            }
+
+                                            @Override
                                             public void channelActive(final ChannelHandlerContext ctx) throws Exception {
                                                 final ByteBuf buff = ctx.alloc().buffer();
                                                 buff.writeBytes("This is a test".getBytes());
